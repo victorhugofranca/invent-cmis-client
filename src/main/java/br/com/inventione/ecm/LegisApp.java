@@ -16,11 +16,9 @@ import br.com.inventione.ecm.folder.CmisFolderService;
 
 public class LegisApp {
 
-	private static final String CMIS_ATOMPUB_URL = "http://localhost:8080/alfresco/service/cmis";
-	private static final String REPOSITORY_ID = "3e020bb1-b62c-49e0-9754-5d3de8eb7653";
-
 	private static String PARENT_FOLDER = "workspace://SpacesStore/4b7866f6-624e-462c-a7a7-50f801283bc3";
-	private static String SEARCH_PARAM = "fazenda";
+	private static String SEARCH_PARAM = "victor";
+
 	private static int PAGE_INDEX = 0;
 	private static int PAGE_MAX_SIZE = 5;
 
@@ -29,7 +27,7 @@ public class LegisApp {
 		// ===================== Sub folder structure list ====================
 		CmisFolderService cmisFolderService = new CmisFolderService();
 		List<CmisFolderSearchResult> foldersList = cmisFolderService.search(
-				CMIS_ATOMPUB_URL, REPOSITORY_ID, PARENT_FOLDER, SEARCH_PARAM);
+				PARENT_FOLDER, SEARCH_PARAM);
 
 		System.out.println("=======Found sub folders =====");
 		System.out.println("==============================");
@@ -49,8 +47,8 @@ public class LegisApp {
 		// ===================
 		CmisDocumentService cmisDocumentService = new CmisDocumentService();
 		CmisDocumentSearchResultList cmisDocumentSearchResultList = cmisDocumentService
-				.search(CMIS_ATOMPUB_URL, REPOSITORY_ID, foldersList.get(0)
-						.getId(), SEARCH_PARAM, PAGE_INDEX, PAGE_MAX_SIZE);
+				.search(foldersList.get(0).getId(), SEARCH_PARAM, PAGE_INDEX,
+						PAGE_MAX_SIZE);
 		System.out.println("=========Paging information==========");
 
 		System.out.println("page index: "
@@ -61,22 +59,26 @@ public class LegisApp {
 				+ cmisDocumentSearchResultList.getTotalNumItens());
 		System.out.println("total pages: "
 				+ cmisDocumentSearchResultList.getPagesNum());
-		
+
 		System.out.println("==============================");
 
 		List<CmisDocumentSearchResult> cmisDocumentSearchResults = cmisDocumentSearchResultList
 				.getCmisDocumentSearchResultList();
 
-		System.out.println("======= Documents for sub folder: " + foldersList.get(0).getName() + "=======");
+		System.out.println("======= Documents for sub folder: "
+				+ foldersList.get(0).getName() + "=======");
 		for (Iterator<CmisDocumentSearchResult> iterator = cmisDocumentSearchResults
 				.iterator(); iterator.hasNext();) {
 			CmisDocumentSearchResult cmisDocumentSearchResult = (CmisDocumentSearchResult) iterator
 					.next();
 
 			System.out.println("File id: " + cmisDocumentSearchResult.getId());
-			System.out.println("File name: " + cmisDocumentSearchResult.getFileName());
+			System.out.println("File name: "
+					+ cmisDocumentSearchResult.getFileName());
 
 			// Downloading file
+			System.out.println(cmisDocumentSearchResult
+							.getId());
 			writeFile(
 					cmisDocumentService.getDocumentContent(cmisDocumentSearchResult
 							.getId()), cmisDocumentSearchResult.getFileName());

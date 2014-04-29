@@ -1,10 +1,16 @@
 package br.com.inventione.ecm.document;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
-public class CmisDocumentSearchResultList {
+import javax.xml.bind.annotation.XmlRootElement;
 
+@XmlRootElement(name = "DocumentSearchResultList")
+public class CmisDocumentSearchResultList implements Serializable {
+
+	private static final long serialVersionUID = 1L;
+	
 	private List<CmisDocumentSearchResult> cmisDocumentSearchResultList;
 	private Long totalNumItens;
 	private Long pageNumItens;
@@ -42,15 +48,15 @@ public class CmisDocumentSearchResultList {
 	public void setPageIndex(Long pageIndex) {
 		this.pageIndex = pageIndex;
 	}
-	
+
 	public List<CmisDocumentSearchResult> getCmisDocumentSearchResultList() {
 		return cmisDocumentSearchResultList;
 	}
-	
+
 	public Long getPagesNum() {
 		return pagesNum;
 	}
-	
+
 	public void setPagesNum(Long pagesNum) {
 		this.pagesNum = pagesNum;
 	}

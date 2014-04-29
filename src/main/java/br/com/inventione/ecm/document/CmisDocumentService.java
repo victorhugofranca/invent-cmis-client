@@ -1,6 +1,14 @@
 package br.com.inventione.ecm.document;
 
 import java.io.InputStream;
+import java.util.Iterator;
+import java.util.List;
+
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
+import javax.ws.rs.Produces;
+import javax.ws.rs.core.MediaType;
 
 import org.apache.chemistry.opencmis.client.api.CmisObject;
 import org.apache.chemistry.opencmis.client.api.Document;
@@ -10,29 +18,36 @@ import org.apache.chemistry.opencmis.client.api.Session;
 
 import br.com.inventione.ecm.session.CmisSessionService;
 
+@Path("/documentservice")
 public class CmisDocumentService {
 
 	private Session session;
 
-	public CmisDocumentSearchResultList search(String cmisAtompubUrl,
-			String repoId, String parentFolder, String searchParam,
-			int pageIndex, int maxPageSize) {
+	@GET
+	@Path("/search/{parentFolder}/{searchParam}/{pageIndex}/{maxPageSize}")
+	@Produces({ MediaType.APPLICATION_JSON })
+	public CmisDocumentSearchResultList search(
+			@PathParam("parentFolder") String parentFolder,
+			@PathParam("searchParam") String searchParam,
+			@PathParam("pageIndex") int pageIndex,
+			@PathParam("maxPageSize") int maxPageSize) {
 
-		CmisSessionService cmisSessionService = new CmisSessionService();
-		session = cmisSessionService.connect(cmisAtompubUrl, repoId);
-
-		long totalItensNum = getItensTotal(parentFolder, searchParam);
+		session = CmisSessionService.connect();
 
 		CmisDocumentSearchResultList cmisDocumentSearchResultList = new CmisDocumentSearchResultList();
 
+		String queryString = "SELECT cmis:objectId, cmis:name from cmis:document where"
+				+ " =content:"
+				+ searchParam
+				+ " and IN_TREE('"
+				+ "workspace://SpacesStore/" + parentFolder + "')";
+
 		// Load documents under the target folder
 		ItemIterable<QueryResult> documentsResultSet = session
-				.query("SELECT cmis:objectId, cmis:name from cmis:document where "
-						+ "in_folder('"
-						+ parentFolder
-						+ "') and contains('"
-						+ searchParam + "') ", false)
-				.skipTo(maxPageSize * pageIndex).getPage(maxPageSize);
+				.query(queryString, false).skipTo(maxPageSize * pageIndex)
+				.getPage(maxPageSize);
+
+		long totalItensNum = documentsResultSet.getTotalNumItems();
 
 		// Build CmisDocumentSearchList with documents under the target folder
 		for (QueryResult documentsResult : documentsResultSet) {
@@ -42,8 +57,19 @@ public class CmisDocumentService {
 			Object documentName = documentsResult
 					.getPropertyValueByQueryName("cmis:name");
 
+			Document document = (Document) session.getObject(String
+					.valueOf(documentId));
+			List<String> paths = document.getPaths();
+			StringBuffer pathString = new StringBuffer();
+			for (Iterator<String> iterator = paths.iterator(); iterator
+					.hasNext();) {
+				pathString.append(iterator.next());
+			}
+
 			CmisDocumentSearchResult documentSearchResult = new CmisDocumentSearchResult();
-			documentSearchResult.setId(String.valueOf(documentId));
+			documentSearchResult.setId(String.valueOf(documentId).replaceAll(
+					"workspace://SpacesStore/", ""));
+			documentSearchResult.setPath(pathString.toString());
 			documentSearchResult.setFileName(String.valueOf(documentName));
 
 			cmisDocumentSearchResultList.add(documentSearchResult);
@@ -61,21 +87,16 @@ public class CmisDocumentService {
 
 	}
 
-	public InputStream getDocumentContent(String objectId) {
-		CmisObject object = session.getObject(objectId);
+	@GET
+	@Path("/document/{objectId}")
+	@Produces({ "application/pdf" })
+	public InputStream getDocumentContent(@PathParam("objectId") String objectId) {
+		session = CmisSessionService.connect();
+
+		CmisObject object = session.getObject("workspace://SpacesStore/"
+				+ objectId);
 		Document document = (Document) object;
 		return document.getContentStream().getStream();
-	}
-
-	private long getItensTotal(String parentFolder, String searchParam) {
-
-		ItemIterable<QueryResult> documentsResultSet = session.query(
-				"SELECT cmis:objectId from cmis:document where "
-						+ "in_folder('" + parentFolder + "') and contains('"
-						+ searchParam + "') ", false);
-
-		return documentsResultSet.getTotalNumItems();
-
 	}
 
 }
